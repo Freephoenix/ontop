@@ -238,10 +238,5 @@ public class TestTBoxReasonerImpl_OnNamedDAG implements TBoxReasoner {
 			return null;
 		}
 
-		@Override
-		public Equivalences<T> getFullVertex(T v) {
-			// TODO Auto-generated method stub
-			return null;
-		}
 	}
 }

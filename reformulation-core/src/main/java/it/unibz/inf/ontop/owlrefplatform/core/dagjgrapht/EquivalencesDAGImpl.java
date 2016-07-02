@@ -73,15 +73,7 @@ public class EquivalencesDAGImpl<T> implements EquivalencesDAG<T> {
 	public Equivalences<T> getVertex(T v) {
 		return vertexIndex.get(v);
 	}
-	
-	/** 
-	 * 
-	 */
-	@Override
-	public Equivalences<T> getFullVertex(T v) {
-		return fullVertexIndex.get(v);
-	}
-	
+		
 	@Override
 	public T getCanonicalForm(T v) {
 		Equivalences<T> vs = fullVertexIndex.get(v);
