@@ -42,8 +42,8 @@ public class QuestOWLReasoningTest {
 	 * Create Objects that will be used in ontology assertions.
 	 */
 	String prefix = "http://www.example.org/";
-	OWLClass cDirect = Class(IRI.create(prefix + "Direct"));
-	OWLClass cNotDirect = Class(IRI.create(prefix + "NotDirect"));
+	OWLClass cDirect = Class(IRI.create(prefix + "cDirect"));
+	OWLClass cNotDirect = Class(IRI.create(prefix + "cNotDirect"));
 
 	OWLClass cA = Class(IRI.create(prefix + "A"));
 	OWLClass cB = Class(IRI.create(prefix + "B"));
@@ -51,8 +51,14 @@ public class QuestOWLReasoningTest {
 	
 	OWLObjectProperty oD = ObjectProperty(IRI.create(prefix + "D"));
 	OWLObjectInverseOf oDInv = ObjectInverseOf(oD);
-	OWLObjectProperty oE = ObjectProperty(IRI.create(prefix + "E"));
-	OWLObjectInverseOf oEInv = ObjectInverseOf(oE);
+	OWLObjectProperty oDirect = ObjectProperty(IRI.create(prefix + "oDirect"));
+	OWLObjectInverseOf oDirectInv = ObjectInverseOf(oDirect);
+	OWLObjectProperty oF = ObjectProperty(IRI.create(prefix + "F"));
+	OWLObjectInverseOf oFInv = ObjectInverseOf(oF);
+	OWLObjectProperty oNotDirect = ObjectProperty(IRI.create(prefix + "oNotDirect"));
+	OWLObjectInverseOf oNotDirectInv = ObjectInverseOf(oNotDirect);
+	OWLObjectProperty oG = ObjectProperty(IRI.create(prefix + "G"));
+	OWLObjectInverseOf oGInv = ObjectInverseOf(oG);
 
 
 	@Before
@@ -66,16 +72,12 @@ public class QuestOWLReasoningTest {
 				Declaration(cC),
 				
 				Declaration(oD),
-				Declaration(oE)
+				Declaration(oDirect),
+				Declaration(oF)
 				);
 	}
 	
-	/*
-	 * CLASS EXPRESIONS
-	 */
-	/**
-	 * TODO: Add test for invalid types of class expressions.
-	 */
+	
 	private void startReasoner() {
 		QuestPreferences p = new QuestPreferences();
 		p.setCurrentValueOf(QuestPreferences.ABOX_MODE, QuestConstants.CLASSIC);
@@ -84,77 +86,94 @@ public class QuestOWLReasoningTest {
         QuestOWLConfiguration config = QuestOWLConfiguration.builder().preferences(p).build();
         reasoner = factory.createReasoner(ontology, config);
 	}
-
+	
+	/*
+	 * CLASS EXPRESIONS
+	 */
+	/**
+	 * TODO: Add test for invalid types of class expressions.
+	 */
 	
 	@Test
 	public void testGetSubClasses() throws OWLOntologyCreationException {
 
-		//Direct subclass
+		//cDirect 	 [Sub] 	 cB
+		//cA 		 [Equiv] cDirect
+		//cNotDirect [Sub] 	 cDirect
 		manager.addAxiom(ontology, OWLFunctionalSyntaxFactory.SubClassOf(cDirect,cB));
-		//TODO: Should cA be considered a directed subclass?
 		manager.addAxiom(ontology, OWLFunctionalSyntaxFactory.SubClassOf(cDirect,cA));
 		manager.addAxiom(ontology, OWLFunctionalSyntaxFactory.SubClassOf(cA, cDirect));
-		//Not direct subclass
 		manager.addAxiom(ontology, OWLFunctionalSyntaxFactory.SubClassOf(cNotDirect,cDirect));
 
 		startReasoner();
 		
-		//Get only direct subclass
+		//Get only direct subclass of cB: cDirect, cA
 		NodeSet<OWLClass> subClasses = reasoner.getSubClasses(cB, true);
 		assertTrue(subClasses.containsEntity(cDirect));
 		assertTrue(subClasses.containsEntity(cA));
 		assertFalse(subClasses.containsEntity(cNotDirect));
+		assertFalse(subClasses.containsEntity(cB));
+
 		
-		//Get all subclass
+		//Get all subclass of cB: cDirect, cA, cNotDirect
 		NodeSet<OWLClass> subNotDirectClasses = reasoner.getSubClasses(cB, false);
 		assertTrue(subNotDirectClasses.containsEntity(cDirect));
+		assertTrue(subClasses.containsEntity(cA));
 		assertTrue(subNotDirectClasses.containsEntity(cNotDirect));
+		assertFalse(subClasses.containsEntity(cB));
+
 	} 
 	
 	@Test
 	public void testGetSuperClasses() throws OWLOntologyCreationException {
 
-		//Direct superclass
+		//cB 		[Sub] 	 cDirect
+		//cA 		[Equiv]  cDirect
+		//cDirect 	[Sub] 	 cNotDirect
 		manager.addAxiom(ontology, OWLFunctionalSyntaxFactory.SubClassOf(cB, cDirect));
-		//TODO: Should cA be considered a directed subclass?
 		manager.addAxiom(ontology, OWLFunctionalSyntaxFactory.SubClassOf(cDirect,cA));
 		manager.addAxiom(ontology, OWLFunctionalSyntaxFactory.SubClassOf(cA, cDirect));
-		//Not direct subclass
 		manager.addAxiom(ontology, OWLFunctionalSyntaxFactory.SubClassOf(cDirect, cNotDirect));
 
 		startReasoner();
 		
-		//Get only direct superclass
+		//Get only direct superclass of cB: cDirect, cA
 		NodeSet<OWLClass> superClasses = reasoner.getSuperClasses(cB, true);
 		assertTrue(superClasses.containsEntity(cDirect));
 		assertTrue(superClasses.containsEntity(cA));
 		assertFalse(superClasses.containsEntity(cNotDirect));
+		assertFalse(superClasses.containsEntity(cB));
 		
-		//Get all superclass
+		//Get all superclass of cB: cDirect, cA, cNotDirect
 		NodeSet<OWLClass> superNotDirectClasses = reasoner.getSuperClasses(cB, false);
 		assertTrue(superNotDirectClasses.containsEntity(cDirect));
+		assertTrue(superClasses.containsEntity(cA));
 		assertTrue(superNotDirectClasses.containsEntity(cNotDirect));
+		assertFalse(superClasses.containsEntity(cB));
+
 	} 
 	
 	@Test
 	public void testGetEquivClasses() throws OWLOntologyCreationException {
 
+		// cA [Equiv] 	cB
+		// cA [Sub]		cC
 		manager.addAxiom(ontology, OWLFunctionalSyntaxFactory.SubClassOf(cA,cB));
 		manager.addAxiom(ontology, OWLFunctionalSyntaxFactory.SubClassOf(cB, cA));
 		manager.addAxiom(ontology, OWLFunctionalSyntaxFactory.SubClassOf(cA, cC));
 
 		startReasoner();
 		
-		//Get equivalent classes
+		//Get equivalent classes of cA: cA,cB
 		Node<OWLClass> equivClasses = reasoner.getEquivalentClasses(cA);
-		// TODO: Only one element : A!!
+		assertTrue(equivClasses.contains(cA));
 		assertTrue(equivClasses.contains(cB));
 		assertFalse(equivClasses.contains(cC));
 		
-		//Get all superclass
-		// TODO: Equivalences are empty !!
+		//Get equivalent classes of cB: cA, cB
 		equivClasses = reasoner.getEquivalentClasses(cB);
 		assertTrue(equivClasses.contains(cA));
+		assertTrue(equivClasses.contains(cB));
 		assertFalse(equivClasses.contains(cC));
 	} 
 
@@ -162,24 +181,109 @@ public class QuestOWLReasoningTest {
 	/*
 	 * OBJECT PROPERTY EXPRESIONS
 	 */
-
 	@Test
 	public void testGetSubObjProperty(){
 		
-		manager.addAxiom(ontology, OWLFunctionalSyntaxFactory.SubObjectPropertyOf(oE, oD));
+		//oNotDirect [Sub] oF [Equiv] oDirect [Sub] oD
+		manager.addAxiom(ontology, OWLFunctionalSyntaxFactory.SubObjectPropertyOf(oDirect, oD));
+		manager.addAxiom(ontology, OWLFunctionalSyntaxFactory.SubObjectPropertyOf(oF, oDirect));
+		manager.addAxiom(ontology, OWLFunctionalSyntaxFactory.SubObjectPropertyOf(oDirect, oF));
+		manager.addAxiom(ontology, OWLFunctionalSyntaxFactory.SubObjectPropertyOf(oNotDirect, oF));
 		
 		startReasoner();
 		
+		// Direct sub object properties of oD: oDirect, oF
 		NodeSet<OWLObjectPropertyExpression> subClasses = reasoner.getSubObjectProperties(oD, true);
-		assertTrue(subClasses.containsEntity(oE));
-		assertFalse(subClasses.containsEntity(oEInv));
+		assertTrue(subClasses.containsEntity(oDirect));
+		assertTrue(subClasses.containsEntity(oF));
+		assertFalse(subClasses.containsEntity(oD));
+		assertFalse(subClasses.containsEntity(oNotDirect));
+		// -> check that for inverse properties it does not hold
+		assertFalse(subClasses.containsEntity(oDirectInv));
+		assertFalse(subClasses.containsEntity(oFInv));
 		assertFalse(subClasses.containsEntity(oDInv));
+		assertFalse(subClasses.containsEntity(oNotDirectInv));
 
 
+		// Sub object properties of inverse of oD: oDirectInv, oFInv, oNotDirectInv
 		subClasses = reasoner.getSubObjectProperties(oDInv, true);
-		assertTrue(subClasses.containsEntity(oEInv));
-		assertFalse(subClasses.containsEntity(oE));
-
-		
+		assertTrue(subClasses.containsEntity(oDirectInv));
+		assertTrue(subClasses.containsEntity(oFInv));
+		assertFalse(subClasses.containsEntity(oNotDirectInv));
+		assertFalse(subClasses.containsEntity(oDInv));
+		// -> check that for the simple properties it does not hold
+		assertFalse(subClasses.containsEntity(oDirect));
+		assertFalse(subClasses.containsEntity(oF));
+		assertFalse(subClasses.containsEntity(oD));
+		assertFalse(subClasses.containsEntity(oNotDirect));
 	}
+	
+	@Test
+	public void testGetSuperObjProperty(){
+		
+		// oD [Sub] oDirect 	[Equiv] oF
+		// oF [Sub] oNotDirect
+		manager.addAxiom(ontology, OWLFunctionalSyntaxFactory.SubObjectPropertyOf(oD, oDirect));
+		manager.addAxiom(ontology, OWLFunctionalSyntaxFactory.SubObjectPropertyOf(oDirect, oF));
+		manager.addAxiom(ontology, OWLFunctionalSyntaxFactory.SubObjectPropertyOf(oF, oDirect));
+		manager.addAxiom(ontology, OWLFunctionalSyntaxFactory.SubObjectPropertyOf(oF, oNotDirect));
+		
+		startReasoner();
+		
+		// Direct super object properties of oD: oDirect, oF
+		NodeSet<OWLObjectPropertyExpression> superClasses = reasoner.getSuperObjectProperties(oD, true);
+		assertTrue(superClasses.containsEntity(oDirect));
+		assertTrue(superClasses.containsEntity(oF));
+		assertFalse(superClasses.containsEntity(oD));
+		assertFalse(superClasses.containsEntity(oNotDirect));
+		// -> check that for inverse properties it does not hold
+		assertFalse(superClasses.containsEntity(oDirectInv));
+		assertFalse(superClasses.containsEntity(oFInv));
+		assertFalse(superClasses.containsEntity(oDInv));
+		assertFalse(superClasses.containsEntity(oNotDirectInv));
+
+
+		// Super object properties of inverse of oD: oDirectInv, oFInv, oNotDirectInv
+		superClasses = reasoner.getSuperObjectProperties(oDInv, true);
+		assertTrue(superClasses.containsEntity(oDirectInv));
+		assertTrue(superClasses.containsEntity(oFInv));
+		assertFalse(superClasses.containsEntity(oNotDirectInv));
+		assertFalse(superClasses.containsEntity(oDInv));
+		// -> check that for the simple properties it does not hold
+		assertFalse(superClasses.containsEntity(oDirect));
+		assertFalse(superClasses.containsEntity(oF));
+		assertFalse(superClasses.containsEntity(oD));
+		assertFalse(superClasses.containsEntity(oNotDirect));
+	}
+	
+	
+	@Test
+	public void testGetEquivObjProperty() throws OWLOntologyCreationException {
+
+		// oD [Equiv] 	oF
+		// oD [Sub]		oG
+		manager.addAxiom(ontology, OWLFunctionalSyntaxFactory.SubObjectPropertyOf(oD,oF));
+		manager.addAxiom(ontology, OWLFunctionalSyntaxFactory.SubObjectPropertyOf(oF,oD));
+		manager.addAxiom(ontology, OWLFunctionalSyntaxFactory.SubObjectPropertyOf(oD,oG));
+
+		startReasoner();
+		
+		//Get equivalent object properties of oD: oD,oF
+		Node<OWLObjectPropertyExpression> equivObjProperties = reasoner.getEquivalentObjectProperties(oD);
+		assertTrue(equivObjProperties.contains(oD));
+		assertTrue(equivObjProperties.contains(oF));
+		assertFalse(equivObjProperties.contains(oG));
+		assertFalse(equivObjProperties.contains(oGInv));
+		assertFalse(equivObjProperties.contains(oDInv));
+		assertFalse(equivObjProperties.contains(oFInv));
+		
+		//Get equivalent object properties of inverse of oF: oFInv, oDInv
+		equivObjProperties = reasoner.getEquivalentObjectProperties(oFInv);
+		assertTrue(equivObjProperties.contains(oDInv));
+		assertTrue(equivObjProperties.contains(oFInv));
+		assertFalse(equivObjProperties.contains(oG));
+		assertFalse(equivObjProperties.contains(oGInv));
+		assertFalse(equivObjProperties.contains(oD));
+		assertFalse(equivObjProperties.contains(oF));
+	} 
 }
