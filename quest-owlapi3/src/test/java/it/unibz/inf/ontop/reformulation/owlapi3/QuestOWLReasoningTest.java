@@ -6,6 +6,8 @@ import static org.semanticweb.owlapi.apibinding.OWLFunctionalSyntaxFactory.Objec
 import static org.semanticweb.owlapi.apibinding.OWLFunctionalSyntaxFactory.ObjectInverseOf;
 import static org.semanticweb.owlapi.apibinding.OWLFunctionalSyntaxFactory.Declaration;
 import static org.semanticweb.owlapi.apibinding.OWLFunctionalSyntaxFactory.Ontology;
+import static org.semanticweb.owlapi.apibinding.OWLFunctionalSyntaxFactory.EquivalentClasses;
+import static org.semanticweb.owlapi.apibinding.OWLFunctionalSyntaxFactory.EquivalentObjectProperties;
 
 import org.junit.Before;
 import org.junit.Test;
@@ -48,6 +50,8 @@ public class QuestOWLReasoningTest {
 	OWLClass cA = Class(IRI.create(prefix + "A"));
 	OWLClass cB = Class(IRI.create(prefix + "B"));
 	OWLClass cC = Class(IRI.create(prefix + "C"));
+	OWLClass cH = Class(IRI.create(prefix + "H"));
+
 	
 	OWLObjectProperty oD = ObjectProperty(IRI.create(prefix + "D"));
 	OWLObjectInverseOf oDInv = ObjectInverseOf(oD);
@@ -59,6 +63,8 @@ public class QuestOWLReasoningTest {
 	OWLObjectInverseOf oNotDirectInv = ObjectInverseOf(oNotDirect);
 	OWLObjectProperty oG = ObjectProperty(IRI.create(prefix + "G"));
 	OWLObjectInverseOf oGInv = ObjectInverseOf(oG);
+	OWLObjectProperty oI = ObjectProperty(IRI.create(prefix + "I"));
+	OWLObjectInverseOf oIInv = ObjectInverseOf(oI);
 
 
 	@Before
@@ -70,10 +76,14 @@ public class QuestOWLReasoningTest {
 				Declaration(cA),
 				Declaration(cB),
 				Declaration(cC),
+				Declaration(cH),
+
 				
 				Declaration(oD),
 				Declaration(oDirect),
-				Declaration(oF)
+				Declaration(oF),
+				Declaration(oG),
+				Declaration(oI)
 				);
 	}
 	
@@ -161,6 +171,9 @@ public class QuestOWLReasoningTest {
 		manager.addAxiom(ontology, OWLFunctionalSyntaxFactory.SubClassOf(cA,cB));
 		manager.addAxiom(ontology, OWLFunctionalSyntaxFactory.SubClassOf(cB, cA));
 		manager.addAxiom(ontology, OWLFunctionalSyntaxFactory.SubClassOf(cA, cC));
+		
+		manager.addAxiom(ontology, OWLFunctionalSyntaxFactory.SubClassOf(cA,cH));
+		manager.addAxiom(ontology, OWLFunctionalSyntaxFactory.SubClassOf(cH, cA));
 
 		startReasoner();
 		
@@ -175,6 +188,10 @@ public class QuestOWLReasoningTest {
 		assertTrue(equivClasses.contains(cA));
 		assertTrue(equivClasses.contains(cB));
 		assertFalse(equivClasses.contains(cC));
+		
+		assertTrue(reasoner.isEntailed(EquivalentClasses(cA,cB,cH)));
+		assertFalse(reasoner.isEntailed(EquivalentClasses(cA,cB,cC)));
+
 	} 
 
 
@@ -265,6 +282,9 @@ public class QuestOWLReasoningTest {
 		manager.addAxiom(ontology, OWLFunctionalSyntaxFactory.SubObjectPropertyOf(oD,oF));
 		manager.addAxiom(ontology, OWLFunctionalSyntaxFactory.SubObjectPropertyOf(oF,oD));
 		manager.addAxiom(ontology, OWLFunctionalSyntaxFactory.SubObjectPropertyOf(oD,oG));
+		
+		manager.addAxiom(ontology, OWLFunctionalSyntaxFactory.SubObjectPropertyOf(oD,oI));
+		manager.addAxiom(ontology, OWLFunctionalSyntaxFactory.SubObjectPropertyOf(oI,oD));
 
 		startReasoner();
 		
@@ -285,5 +305,39 @@ public class QuestOWLReasoningTest {
 		assertFalse(equivObjProperties.contains(oGInv));
 		assertFalse(equivObjProperties.contains(oD));
 		assertFalse(equivObjProperties.contains(oF));
+		
+		assertTrue(reasoner.isEntailed(EquivalentObjectProperties(oI,oD,oF)));
+		assertFalse(reasoner.isEntailed(EquivalentObjectProperties(oI,oG,oF)));
+
+
 	} 
+	
+	@Test
+	public void testGetInverseObjectPropeties() {
+		// oD [Equiv] 	oF
+		// oD [Sub]		oG
+		manager.addAxiom(ontology, OWLFunctionalSyntaxFactory.SubObjectPropertyOf(oD,oF));
+		manager.addAxiom(ontology, OWLFunctionalSyntaxFactory.SubObjectPropertyOf(oF,oD));
+		manager.addAxiom(ontology, OWLFunctionalSyntaxFactory.SubObjectPropertyOf(oD,oG));
+
+		startReasoner();
+		
+		//Get inverse object properties of oD: oDInv,oFInv
+		Node<OWLObjectPropertyExpression> invObjProperties = reasoner.getInverseObjectProperties(oD);
+		assertFalse(invObjProperties.contains(oD));
+		assertFalse(invObjProperties.contains(oF));
+		assertFalse(invObjProperties.contains(oG));
+		assertFalse(invObjProperties.contains(oGInv));
+		assertTrue(invObjProperties.contains(oDInv));
+		assertTrue(invObjProperties.contains(oFInv));
+		
+		//Get inverse object properties of inverse of oF: oF, oD
+		invObjProperties = reasoner.getInverseObjectProperties(oFInv);
+		assertFalse(invObjProperties.contains(oDInv));
+		assertFalse(invObjProperties.contains(oFInv));
+		assertFalse(invObjProperties.contains(oG));
+		assertFalse(invObjProperties.contains(oGInv));
+		assertTrue(invObjProperties.contains(oD));
+		assertTrue(invObjProperties.contains(oF));
+	}
 }

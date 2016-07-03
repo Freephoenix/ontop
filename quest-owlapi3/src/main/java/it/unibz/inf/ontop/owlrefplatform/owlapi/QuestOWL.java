@@ -45,6 +45,7 @@ import org.semanticweb.owlapi.reasoner.InconsistentOntologyException;
 import org.semanticweb.owlapi.reasoner.impl.OWLClassNodeSet;
 import org.semanticweb.owlapi.reasoner.impl.OWLReasonerBase;
 import org.semanticweb.owlapi.reasoner.structural.StructuralReasoner;
+import org.semanticweb.owlapi.util.CollectionFactory;
 import org.semanticweb.owlapi.util.Version;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -54,6 +55,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Properties;
 import java.util.Set;
 
@@ -62,7 +64,17 @@ import java.util.Set;
  * the implementation of the reasoning method in the reformulation project.
  */
 public class QuestOWL extends OWLReasonerBase implements AutoCloseable {
-
+	
+//	TODO: delete
+//	final Set<AxiomType<?>> supportedAxioms = CollectionFactory.createSet(
+//			AxiomType.EQUIVALENT_CLASSES,
+//			AxiomType.EQUIVALENT_DATA_PROPERTIES,
+//			AxiomType.EQUIVALENT_OBJECT_PROPERTIES,
+//			AxiomType.SUBCLASS_OF,
+//			AxiomType.SUB_OBJECT_PROPERTY,
+//			AxiomType.SUB_DATA_PROPERTY
+//			);
+	
 	final OWL2QLProfile owl2qlprofile = new OWL2QLProfile();
 
 	StructuralReasoner structuralReasoner;
@@ -655,19 +667,65 @@ public class QuestOWL extends OWLReasonerBase implements AutoCloseable {
 	public boolean isEntailed(@Nonnull OWLAxiom axiom)
 			throws ReasonerInterruptedException, UnsupportedEntailmentTypeException, TimeOutException,
 			AxiomNotInProfileException, FreshEntitiesException, InconsistentOntologyException {
-		return structuralReasoner.isEntailed(axiom);
+		
+		AxiomEntailmentQuestOWL axiomEntailmentExecutor = AxiomEntailmentQuestOWL.getInstance();
+		AxiomType<?> axiomType = axiom.getAxiomType();
+		
+		if(!isEntailmentCheckingSupported(axiomType)) {
+			throw new UnsupportedEntailmentTypeException(axiom);
+		}
+		
+		boolean isAxiomEntailed = axiomEntailmentExecutor.isEntailed(this, axiom);
+			
+		return isAxiomEntailed;
 	}
 
 	@Override
 	public boolean isEntailed(@Nonnull Set<? extends OWLAxiom> axioms)
 			throws ReasonerInterruptedException, UnsupportedEntailmentTypeException, TimeOutException,
 			AxiomNotInProfileException, FreshEntitiesException, InconsistentOntologyException {
-		return structuralReasoner.isEntailed(axioms);
+		
+		/*
+		 * @throws UnsupportedEntailmentTypeException
+	     *         if the reasoner cannot perform a check to see if the specified
+	     *         axiom is entailed
+	     * @throws AxiomNotInProfileException
+	     *         if {@code axiom} is not in the profile that is supported by this
+	     *         reasoner.
+	     * @throws InconsistentOntologyException
+	     *         if the set of reasoner axioms is inconsistent
+	     * @see #isEntailmentCheckingSupported(org.semanticweb.owlapi.model.AxiomType)
+		 */
+		
+		AxiomEntailmentQuestOWL axiomEntailmentExecutor = AxiomEntailmentQuestOWL.getInstance();
+		for (OWLAxiom axiom: axioms) {
+			
+			AxiomType<?> axiomType = axiom.getAxiomType();
+			
+			if(!isEntailmentCheckingSupported(axiomType)) {
+				throw new UnsupportedEntailmentTypeException(axiom);
+			}
+			
+			boolean isAxiomEntailed = axiomEntailmentExecutor.isEntailed(this, axiom);
+			
+			if(!isAxiomEntailed) {
+				return false;
+			}	
+		}
+		
+		return true;
 	}
 
 	@Override
 	public boolean isEntailmentCheckingSupported(@Nonnull AxiomType<?> axiomType) {
-		return structuralReasoner.isEntailmentCheckingSupported(axiomType);
+		
+//		if (supportedAxioms.contains(axiomType)) {
+//			return true;
+//		} else {
+//			return false;
+//		}
+		
+		return AxiomEntailmentQuestOWL.getInstance().isAxiomTypeSupported(axiomType);
 	}
 
 	@Nonnull
@@ -691,7 +749,7 @@ public class QuestOWL extends OWLReasonerBase implements AutoCloseable {
 	 * 
 	 * * No check for FreshEntitiesException, ReasonerInterruptedException,
 	 * TimeOutException: At the time of this implementation it was decided that
-	 * this are not relevant in the context of Quest reasoning.
+	 * these are not relevant in the context of Quest OWL reasoning.
 	 * 
 	 * (non-Javadoc)
 	 */
@@ -940,12 +998,21 @@ public class QuestOWL extends OWLReasonerBase implements AutoCloseable {
 		return structuralReasoner.getDisjointObjectProperties(pe);
 	}
 
+	/*
+	 * Similar implementation to structuralReasoner#getInverseObjectProperties. Removed the use of the depreacted
+	 * method org.semanticweb.owlapi.model.OWLObjectPropertyExpression.getSimplified() because 
+	 * all object properties are always in the simpled form.
+	 * 
+	 * (non-Javadoc)
+	 * @see org.semanticweb.owlapi.reasoner.OWLReasoner#getInverseObjectProperties(org.semanticweb.owlapi.model.OWLObjectPropertyExpression)
+	 */
 	@Nonnull
 	@Override
 	public Node<OWLObjectPropertyExpression> getInverseObjectProperties(@Nonnull OWLObjectPropertyExpression pe)
 			throws InconsistentOntologyException, FreshEntitiesException, ReasonerInterruptedException,
 			TimeOutException {
-		return structuralReasoner.getInverseObjectProperties(pe);
+		OWLObjectPropertyExpression inv = pe.getInverseProperty();
+        return getEquivalentObjectProperties(inv);
 	}
 
 	@Nonnull
