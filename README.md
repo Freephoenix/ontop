@@ -1,3 +1,9 @@
+This fork was created to explore the extension of the OWL API implmentation in Ontop project.
+
+More details in: https://github.com/anaolicosta/ontop/wiki/Ontop-OWL-API-implementation
+
+
+
 [![Maven Central](https://img.shields.io/maven-central/v/it.unibz.inf.ontop/ontop.svg)](http://search.maven.org/#search%7Cga%7C1%7Cg%3A%22it.unibz.inf.ontop%22)
 [![GitHub license](https://img.shields.io/badge/license-Apache%20License%202.0-blue.svg?style=flat)](http://www.apache.org/licenses/LICENSE-2.0)
 [![SourceForge](https://img.shields.io/sourceforge/dm/ontop4obda.svg)](http://sourceforge.net/projects/ontop4obda/files/)
@@ -5,7 +11,7 @@
 
 | Branch    | build status  |
 |-----------|---------------|
-| [Freephoenix master](https://github.com/Freephoenix/ontop/tree/master)  |[![Build Status](https://api.travis-ci.org/Freephoenix/ontop.svg?branch=master)](https://travis-ci.org/ontop/ontop)|
+| [Freephoenix feature/QuestOWL-owlapi](https://github.com/anaolicosta/ontop/tree/feature/QuestOWL-owlapi)  |[![Build Status](https://travis-ci.org/anaolicosta/ontop.svg?branch=feature%2FQuestOWL-owlapi)](https://travis-ci.org/anaolicosta/ontop)|
 | [Ontop master](https://github.com/ontop/ontop/tree/master)  |[![Build Status](https://travis-ci.org/ontop/ontop.svg?branch=master)](https://travis-ci.org/ontop/ontop)|
 
 
@@ -14,6 +20,9 @@ Ontop
 
 Ontop is a framework for ontology based data access (OBDA). It supports SPARQL over
 virtual RDF graphs defined through mappings to RDBMS. 
+
+
+
 
 Compiling, packing, testing, etc.
 --------------------
